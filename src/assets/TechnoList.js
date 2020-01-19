@@ -86,5 +86,11 @@ export default {
         link: '',
         logo : '/static/logo/',
         exp: 3,
+    },
+    leaflet: {
+        name: 'Leaflet',
+        link: '',
+        logo : '/static/logo/',
+        exp: 3,
     }
 }

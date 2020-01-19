@@ -1,10 +1,11 @@
 <template>
     <div class="card">
-        <div>
-            <p class="header_container">
+        <div class="container">
+            <p class="header">
                 <span class="title_job">{{title}} </span>
                 <span class="date">{{period[0]}} - {{period[1]}}</span>
             </p>
+            <p class="resume" v-for="prev of preview" :key="prev">{{prev}}</p>
         </div>
         <div class="options">
             <img class="img" :src="img" />
@@ -12,7 +13,7 @@
                 <img height="30" width="30" src="/static/report.svg">
             </a>
         </div>
-        <p class="resume" v-for="prev of preview" :key="prev">{{prev}}</p>
+
     </div>
 </template>
 
@@ -31,12 +32,27 @@
 
 <style scoped>
     .card {
+        max-height: 400px;
+        display: flex;
         background-color: white;
-        padding: 5px 2%;
-        border-radius: 10px;
-        margin: 10px auto;
+        padding: 30px;
     }
-    .header_container {
+    .card:nth-child(odd) {
+        flex-direction: row-reverse;
+        background-color: #fafafa;
+    }
+    .container {
+        flex: 2;
+        transition: flex 250ms;
+    }
+    .options {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        flex: 1;
+    }
+    .header {
         padding: 0 0 1px 0;
         border-bottom: 1px solid grey;
     }
@@ -48,15 +64,11 @@
         font-size: 14px;
         float: right;
     }
-    .options {
-        float: right;
-        height: 100%;
-        width: 30%;
-        margin: 10px;
-    }
     .img {
-        height: 90%;
+        height: 100%;
         width: 100%;
+        object-fit: contain;
+        padding: 30px;
     }
     .link {
         margin-top: 10px;
@@ -66,6 +78,9 @@
         font-size: 13px;
     }
     @media only screen and (max-width: 600px) {
-        .options {width: 90%;}
+        .card {
+            flex-direction: column-reverse !important;
+            max-height: unset;
+        }
     }
 </style>

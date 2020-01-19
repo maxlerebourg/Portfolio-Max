@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "core-js": "^3.6.1",
+    "leaflet": "^1.6.0",
     "matter-js": "^0.14.2",
     "neataptic": "^1.4.7",
     "particlesjs": "^2.2.3",

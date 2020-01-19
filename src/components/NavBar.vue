@@ -4,7 +4,7 @@
             <a href="#preview" title="Présentation">Présentation</a>
             <a href="#skill" title="Compétences">Compétences</a>
             <a href="#project" title="Projets">Projets</a>
-            <a href="#experience" title="Experiences Professionnelles">Experiences Professionnelles</a>
+            <a href="#experience" title="Experiences Professionnelles">Parcours</a>
             <a href="https://github.com/maxlerebourg" title="GitHub" target="_blank">GitHub</a>
         </div>
     </div>
@@ -18,20 +18,18 @@
 
 <style scoped>
     .navbar {
-        background-color: #1e272e;
         width: 100%;
-        height: auto;
-        text-align: center;
+        text-align: right;
     }
-
     a {
         display: inline-block;
-        color: white;
+        color: black;
         text-decoration: none;
         padding: 10px;
         font-weight: bold;
     }
     a:hover {
-        background-color: #111;
+        background-color: rgba(255, 255, 255, .5);
+        border-radius: 10px;
     }
 </style>

@@ -4,6 +4,7 @@ import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
 import About from '../views/About.vue'
 import Game from '../views/Game.vue'
+import Metro from "../views/Metro";
 
 Vue.use(VueRouter);
 
@@ -29,6 +30,11 @@ const routes = [
     name: 'cube_race',
     component: Game,
     props: {name: 'cube_race'}
+  },
+  {
+    path: '/metro',
+    name: 'metro',
+    component: Metro,
   },
   {
     path: '*',

@@ -93,10 +93,9 @@
     }
 
     @media only screen and (max-width: 600px) {
-        .tab {
-            width: 100vw;
-            padding: 10px;
-            position: unset;
+        .container {
+            width: 95%;
+            padding: 50px 0;
         }
     }
 </style>

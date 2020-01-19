@@ -1,11 +1,7 @@
 <template>
-    <div class="tab">
+    <div>
         <h2 class="title">Mon parcours professionnel</h2>
-        <ul>
-            <li v-for="item in items" :key="item.title">
-                <BackgroundItem v-bind="item" v-item="item"/>
-            </li>
-        </ul>
+        <BackgroundItem v-for="item in items" :key="item.title" v-bind="item" v-item="item"/>
     </div>
 </template>
 
@@ -25,7 +21,8 @@
 </script>
 
 <style scoped>
-    .tab {
-        width: 100%
+    .title {
+        color: black;
+        padding: 30px 30px 0;
     }
 </style>

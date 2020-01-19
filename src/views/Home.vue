@@ -16,7 +16,7 @@
             <ProjectList class="section"/>
         </li>
         <li id="experience">
-            <BackgroundList class="section"/>
+            <BackgroundList/>
         </li>
     </ul>
 </template>
@@ -53,7 +53,9 @@
     }
 
     #navbar {
-        z-index: 10;
+        background-color: rgba(255, 255, 255, .2);
+        margin-top: -38px;
+        z-index: 3;
         top: 0;
         position: sticky;
     }
@@ -71,7 +73,7 @@
     }
 
     #experience {
-        background-color: darkgray;
+        background-color: #fff;
     }
 
     @media only screen and (max-width: 600px) {
@@ -90,6 +92,9 @@
 
         #project {
             background-image: none;
+        }
+        #navbar {
+            margin-top: -76px;
         }
     }
 

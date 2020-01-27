@@ -39,7 +39,7 @@
         background-image: url('/static/blured.jpg');
         background-repeat: no-repeat;
         background-size: cover;
-        height: auto;
+        height: calc(100vh - 38px);
         padding: 5px;
     }
     a {

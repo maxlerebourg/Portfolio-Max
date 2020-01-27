@@ -1,329 +1,302 @@
 <template>
-    <div class="center">
-        <div id="matterJS">
-        </div>
-    </div>
+	<div class="center">
+		<div id="matterJS">
+		</div>
+	</div>
 </template>
 
 <script>
-    import Matter from 'matter-js'
+  import Matter from 'matter-js'
 
-    export default {
-        name: "CubeRace",
-        mounted() {
-            let config = {
-                width: 600,
-                height: 500,
+  export default {
+    name: "CubeRace",
+    mounted() {
+      const config = {
+        width: 600,
+        height: 500,
 
-                player_width: 5,
-                player_height: 1,
-                player_color: '#FF0',
+        player_width: 2,
+        player_color: '#FF0',
 
-                sky_color: '#4c4c4a',
-                ground_color: '#555',
+        sky_color: '#4c4c4a',
+        ground_color: '#555',
 
-                pipe_space: 100,
-                pipe_width: 100,
+        pipe_space: 100,
+        pipe_width: 100,
 
-                limit: 100,
-                vitesse: 1,
+        limit: 100,
+        vitesse: 1,
 
-            };
+        pas: 5,
+        category: ['#ED4C67', '#000', '#fff', '#e4ea9b'],
 
-            let Engine = Matter.Engine,
-                Render = Matter.Render,
-                Runner = Matter.Runner,
-                Body = Matter.Body,
-                Query = Matter.Query,
-                Composite = Matter.Composite,
-                Events = Matter.Events,
-                World = Matter.World,
-                Bodies = Matter.Bodies;
+      };
+
+      const Engine = Matter.Engine,
+        Render = Matter.Render,
+        Runner = Matter.Runner,
+        Body = Matter.Body,
+        Query = Matter.Query,
+        Composite = Matter.Composite,
+        Events = Matter.Events,
+        World = Matter.World,
+        Bodies = Matter.Bodies;
 
 // create engine
-            let engine = Engine.create(),
-                world = engine.world;
+      const engine = Engine.create(),
+        world = engine.world;
 
 // create renderer
-            let render = Render.create({
-                element: document.getElementById('matterJS'),
-                engine: engine,
-                options: {
-                    width: config.width,
-                    height: config.height,
-                    wireframes: false,
-                    showAngleIndicator: false,
-                    background: config.sky_color,
-                }
-            });
-            setTimeout(function () {
-                Render.run(render);
-            }, 500);
-            Render.lookAt(render, {
-                min: {x: 0, y: 0},
-                max: {x: config.width, y: config.height}
-            });
+      const render = Render.create({
+        element: document.getElementById('matterJS'),
+        engine: engine,
+        options: {
+          width: config.width,
+          height: config.height,
+          wireframes: false,
+          showAngleIndicator: false,
+          background: config.sky_color,
+        }
+      });
+      setTimeout(function () {
+        Render.run(render);
+      }, 500);
+      Render.lookAt(render, {
+        min: {x: 0, y: 0},
+        max: {x: config.width, y: config.height}
+      });
 
 // create runner
-            let runner = Runner.create();
-            Runner.run(runner, engine);
-            engine.world.gravity.y = 0;
+      const runner = Runner.create();
+      Runner.run(runner, engine);
+      engine.world.gravity.y = 0;
 
 
-            let group = Body.nextGroup(true);
+      const group = Body.nextGroup(true);
 
+      const players = [];
+      let end;
+      const mapAStar = [];
+      let list = [], next = {};
+      let level = 1;
 
-            let players = [], end, level = 1;
-            let category = ['#ED4C67', '#000', '#fff', '#e4ea9b'];
-            let mapAStar = [], pas = 30, list = [], next = {};
+      const init = () => {
+        for (let i = 1; i < 4; i++) {
+          players.push(Bodies.circle(10, config.height / 2, config.player_width, {
+            id: -i,
+            //frictionAir: 0.1,
+            collisionFilter: {group: group},
+            veloce: config.vitesse,
+            render: {
+              sprite: {
+                texture: '/static/game/flappy' + i + '.png',
+                xScale: 3 / 10,
+                yScale: 3 / 10,
+              }
+            }
+          }));
+        }
+        end = Bodies.rectangle(config.width - 30, config.height / 2, 30, 30, {
+          id: 0,
+          isStatic: true,
+          render: {
+            sprite: {
+              texture: '/static/game/end.png',
+            }
+          },
+        });
+      };
 
-            let init = () => {
-                players = [];
-                for (let i = 1; i < 4; i++) {
-                    players.push(Bodies.circle(10, config.height / 2, config.player_width, {
-                        id: -i,
-                        //frictionAir: 0.1,
-                        collisionFilter: {group: group},
-                        veloce: config.vitesse,
-                        render: {
-                            sprite: {
-                                texture: '/static/game/flappy' + i + '.png',
-                                xScale: 3 / 10,
-                                yScale: 3 / 10,
-                            }
-                        }
-                    }));
-                }
-                end = Bodies.rectangle(config.width - 50, config.height / 2, 30, 30, {
-                    id: 0,
-                    isStatic: true,
-                    render: {
-                        sprite: {
-                            texture: '/static/game/end.png',
-                        }
-                    },
-                });
-            };
+      const createLevel = (level) => {
+        World.clear(world);
+        players.map((el) => {
+          Body.setPosition(el, {x: 10, y: config.height / 2});
+          Body.setVelocity(el, {x: 0, y: 0});
+        });
 
-            let createLevel = (level) => {
-                World.clear(world);
-                players.map((el) => {
-                    Body.setPosition(el, {x: 10, y: config.height / 2});
-                    Body.setVelocity(el, {x: 0, y: 0});
-                });
+        const obstacles = [];
+        for (let i = 0; i <= Math.sqrt(level) * 6; i++) {
+          const type = Math.round(Math.random() * (config.limit * (config.category.length - 1)) + 1);
+          obstacles.push(Bodies.rectangle(
+            Math.random() * (config.width - 200) + 100,
+            Math.random() * config.height,
+            Math.random() * config.width / 6 + 50,
+            Math.random() * config.height / 6 + 50,
+            {
+              id: type,
+              isStatic: true,
+              isSensor: type > config.limit,
+              chamfer: {radius: 20},
+              render: {
+                fillStyle: config.category[(type > config.limit ? type > config.limit * 2 ? 3 : 2 : 1)],
+              },
+            }
+          ));
+          Body.rotate(obstacles[obstacles.length - 1], Math.random() * 360)
+        }
+        obstacles.sort((a, b) => {
+          return b.id - a.id;
+        });
+        World.add(world, obstacles);
+        World.add(world, [end, ...players]);
+        list = aStar(players[1]);
+        next = list.pop();
+      };
 
-
-                let obstacles = [];
-                for (let i = 0; i <= Math.sqrt(level) * 6; i++) {
-                    let type = Math.round(Math.random() * (config.limit * (category.length - 1)) + 1);
-                    obstacles.push(Bodies.rectangle(
-                        Math.random() * (config.width - 200) + 100,
-                        Math.random() * config.height,
-                        Math.random() * config.width / 6 + 50,
-                        Math.random() * config.height / 6 + 50,
-                        {
-                            id: type,
-                            isStatic: true,
-                            isSensor: type > config.limit,
-                            chamfer: {radius: 20},
-                            render: {
-                                fillStyle: category[(type > config.limit ? type > config.limit * 2 ? 3 : 2 : 1)],
-                            },
-                        }
-                    ));
-                    Body.rotate(obstacles[obstacles.length - 1], Math.random() * 360)
-                }
-                obstacles.sort((a, b) => {
-                    return b.id - a.id;
-                });
-                World.add(world, obstacles);
-                World.add(world, [end].concat(players));
-                list = bot(players[1]);
-                next = list.pop();
-            };
-
-            Events.on(engine, 'collisionActive', function (e) {
-                const pairs = e.pairs.length > 1 ?
-                    e.pairs.sort((a, b) => {
-                        return b.bodyB.id - a.bodyB.id
-                    }) : e.pairs;
-                for (let pair of pairs) {
-                    let player = players.find((el) => {
-                        return pair.bodyA.id === el.id || pair.bodyB.id === el.id
-                    });
-                    if (player) {
-                        if ((pair.bodyA.id > config.limit && pair.bodyA.id <= config.limit * 2) || (pair.bodyB.id > config.limit && pair.bodyB.id <= config.limit * 2)) {
-                            player.veloce = config.vitesse * 2;
-                            continue;
-                        }
-                        if ((pair.bodyA.id > config.limit * 2 && pair.bodyB.id <= config.limit * 3) || (pair.bodyB.id > config.limit * 2 && pair.bodyB.id <= config.limit * 3)) {
-                            player.veloce = config.vitesse / 2;
-                            continue;
-                        }
-                        if (pair.bodyB.id === 0 || pair.bodyA.id === 0) {
-                            level += 1;
-                            createLevel(level);
-                            return;
-                        }
-                    }
-                }
-            });
-            Events.on(engine, 'collisionEnd', function (e) {
-                const pairs = e.pairs;
-                for (let pair of pairs) {
-                    if ((pair.bodyA.id < 0 || pair.bodyB.id < 0)) {
-                        pair.bodyA.veloce = config.vitesse;
-                        pair.bodyB.veloce = config.vitesse;
-                    }
-                }
-            });
+      Events.on(engine, 'collisionActive', function (e) {
+        e.pairs.forEach(pair => {
+          const player = players.find(el => pair.bodyA.id === el.id || pair.bodyB.id === el.id);
+          if (player) {
+            if ((pair.bodyA.id > config.limit && pair.bodyA.id <= config.limit * 2)
+              || (pair.bodyB.id > config.limit && pair.bodyB.id <= config.limit * 2)) {
+              player.veloce = config.vitesse * 2;
+              return;
+            }
+            if ((pair.bodyA.id > config.limit * 2 && pair.bodyB.id <= config.limit * 3)
+              || (pair.bodyB.id > config.limit * 2 && pair.bodyB.id <= config.limit * 3)) {
+              player.veloce = config.vitesse / 2;
+              return;
+            }
+          }
+        });
+      });
+      Events.on(engine, 'collisionStart', (e) => {
+        e.pairs.forEach(pair => {
+          if (pair.bodyB.id === 0 || pair.bodyA.id === 0) {
+            console.log('caca');
+            level += 1;
+            createLevel(level);
+          }
+        });
+      });
+      Events.on(engine, 'collisionEnd', function (e) {
+        e.pairs.forEach(pair => {
+          if (pair.bodyA.id < 0 || pair.bodyB.id < 0) {
+            pair.bodyA.veloce = config.vitesse;
+            pair.bodyB.veloce = config.vitesse;
+          }
+        });
+      });
 
 //Controle of the player
 
-            const map = {};
-            document.onkeydown = document.onkeyup = function (e) {
-                e = e || event; // to deal with IE
-                map[e.code] = e.type === 'keydown';
-            };
-            Events.on(engine, 'tick', function () {
-                //console.log(e);
-                for (let player of players) {
-                    if (player.position.y > config.height) Body.setPosition(player, {x: player.position.x, y: 0});
-                    if (player.position.y < 0) Body.setPosition(player, {x: player.position.x, y: config.height});
-                    if (player.position.x > config.width) Body.setPosition(player, {
-                        x: config.width,
-                        y: player.position.y
-                    });
-                    if (player.position.x < 0) Body.setPosition(player, {x: 0, y: player.position.y});
-                    if (map["ArrowLeft"]) Body.translate(players[0], {x: -players[0].veloce, y: players[0].velocity.y});
-                    if (map["ArrowRight"]) Body.translate(players[0], {x: players[0].veloce, y: players[0].velocity.y});
-                    if (map["ArrowUp"]) Body.translate(players[0], {x: players[0].velocity.x, y: -players[0].veloce});
-                    if (map["ArrowDown"]) Body.translate(players[0], {x: players[0].velocity.x, y: players[0].veloce});
-                    if (map["KeyA"]) Body.translate(players[1], {x: -players[1].veloce, y: players[1].velocity.y});
-                    if (map["KeyD"]) Body.translate(players[1], {x: players[1].veloce, y: players[1].velocity.y});
-                    if (map["KeyW"]) Body.translate(players[1], {x: players[1].velocity.x, y: -players[1].veloce});
-                    if (map["KeyS"]) Body.translate(players[1], {x: players[1].velocity.x, y: players[1].veloce});
-                    if (list.length > 0) {
-                        next.dir = next.x - players[2].position.x < -9 ? 'E' : next.dir;
-                        next.dir = next.x - players[2].position.x > 9 ? 'O' : next.dir;
-                        next.dir = next.y - players[2].position.y < -9 ? 'N' : next.dir;
-                        next.dir = next.y - players[2].position.y > 9 ? 'S' : next.dir;
+      const mapKey = {};
+      document.onkeydown = document.onkeyup = function (e) {
+        e = e || event; // to deal with IE
+        mapKey[e.code] = e.type === 'keydown';
+      };
+      Events.on(engine, 'tick', () => {
+        //console.log(e);
+        for (let player of players) {
+          if (player.position.y > config.height) Body.setPosition(player, {x: player.position.x, y: 0});
+          if (player.position.y < 0) Body.setPosition(player, {x: player.position.x, y: config.height});
+          if (player.position.x > config.width) Body.setPosition(player, {
+            x: config.width,
+            y: player.position.y
+          });
+          if (player.position.x < 0) Body.setPosition(player, {x: 0, y: player.position.y});
+          if (mapKey["ArrowLeft"]) Body.translate(players[0], {x: -players[0].veloce, y: players[0].velocity.y});
+          if (mapKey["ArrowRight"]) Body.translate(players[0], {x: players[0].veloce, y: players[0].velocity.y});
+          if (mapKey["ArrowUp"]) Body.translate(players[0], {x: players[0].velocity.x, y: -players[0].veloce});
+          if (mapKey["ArrowDown"]) Body.translate(players[0], {x: players[0].velocity.x, y: players[0].veloce});
+          if (mapKey["KeyA"]) Body.translate(players[1], {x: -players[1].veloce, y: players[1].velocity.y});
+          if (mapKey["KeyD"]) Body.translate(players[1], {x: players[1].veloce, y: players[1].velocity.y});
+          if (mapKey["KeyW"]) Body.translate(players[1], {x: players[1].velocity.x, y: -players[1].veloce});
+          if (mapKey["KeyS"]) Body.translate(players[1], {x: players[1].velocity.x, y: players[1].veloce});
 
-                        if (Math.abs(next.x - players[2].position.x) < 10 &&
-                            Math.abs(next.y - players[2].position.y) < 10) next = list.pop();
-                        switch (next.dir) {
-                            case 'E':
-                                Body.translate(players[2], {x: -players[2].veloce, y: players[2].velocity.y});
-                                break;
-                            case "O":
-                                Body.translate(players[2], {x: players[2].veloce, y: players[2].velocity.y});
-                                break;
-                            case "N":
-                                Body.translate(players[2], {x: players[2].velocity.x, y: -players[2].veloce});
-                                break;
-                            case "S":
-                                Body.translate(players[2], {x: players[2].velocity.x, y: players[2].veloce});
-                                break;
-                        }
-                        //console.log(next.x - players[2].position.x >= pas + 5);
-                        if (next.x - players[2].position.x >= pas + 10) Body.translate(players[2], {x: pas, y: 0});
-                        if (next.x - players[2].position.x <= -pas - 10) Body.translate(players[2], {x: -pas, y: 0});
-                        if (next.y - players[2].position.y >= pas + 10) Body.translate(players[2], {x: 0, y: pas});
-                        if (next.y - players[2].position.y <= -pas - 10) Body.translate(players[2], {x: 0, y: -pas});
-                        //console.log(players[2].position);
-                        //console.log(next);
-                    }
-                }
+          if (list.length > 0 || next) {
+            const x2 = next.x - players[2].position.x;
+            const y2 = next.y - players[2].position.y;
+            const x3 = (x2 > config.pas && players[2].veloce) || (x2 < -config.pas && -players[2].veloce) || 0;
+            const y3 = (y2 > config.pas && players[2].veloce) || (y2 < -config.pas && -players[2].veloce) || 0;
+            Body.translate(players[2], {x: x3, y: y3});
 
-
-            });
-
-
-            let initAStar = async () => {
-                for (let i = 0; i < config.width; i+=5) {
-                    let col = [];
-                    for (let j = 10; j < config.height; j+=5) {
-                        col.push({x: i, y: j});
-                    }
-                    mapAStar = mapAStar.concat(col);
-                }
-            };
-            let bot = (bot) => {
-                //console.log(mapAStar);
-                let closedList = [];
-                let openList = [{x: bot.position.x, y: bot.position.y, dist: 0, cost: 0, obs: false, prec: null}];
-                while (openList.length > 0) {
-                    openList.sort((a, b) => {
-                        return b.dist - a.dist
-                    });
-                    let u = openList.pop();
-                    if (u.x === end.position.x + pas && u.y === end.position.y) {
-                        let path = [];
-                        path.push(u);
-                        while (path[path.length - 1].prec != null) {
-                            path.push(path[path.length - 1].prec)
-                        }
-                        return path;
-                    }
-                    let hoods = [
-                        mapAStar.find((a) => {
-                            return a.x === u.x + pas && a.y === u.y
-                        }),
-                        mapAStar.find((a) => {
-                            return a.x === u.x && a.y === u.y + pas
-                        }),
-                        mapAStar.find((a) => {
-                            return a.x === u.x - pas && a.y === u.y
-                        }),
-                        mapAStar.find((a) => {
-                            return a.x === u.x && a.y === u.y - pas
-                        }),
-                    ], hoody = [];
-                    for (let hood of hoods) {
-                        if (!hood) continue;
-                        let listEl = hood ? Query.point(Composite.allBodies(world), {x: hood.x, y: hood.y}) : false;
-                        if (listEl) {
-                            let ok = true;
-                            for (let id of listEl) {
-                                if (id.id <= config.limit && id.id > 0) ok = false;
-                            }
-                            if (ok) hoody.push(hood);
-                        }
-                    }
-                    for (let node of hoody) {
-                        if (node && (closedList.find((a) => {
-                                return a.x === node.x && a.y === node.y
-                            })
-                            || openList.find((a) => {
-                                return a.dist < node.dist
-                            }))) {
-                            continue;
-                        } else if (node/* && node.obs*/) {
-                            node.cost = u.cost + 1;
-                            //node.obs = Query.point(Composite.allBodies(world), {x: a.x, y: a.y})[0].id < 100;
-                            node.dist = Math.pow(((node.x - end.position.x - pas) * (node.x - end.position.x - pas) + (node.y - end.position.y) * (node.y - end.position.y)), .5);
-                            node.prec = u;
-                            World.add(world, Bodies.circle(node.x, node.y, 1, {isStatic: true, collisionFilter: {group: group}, id: 1000 }));
-
-                            openList.push(node);
-                        }
-                    }
-                    closedList.push(u);
-                }
-                return [];
-            };
-
-            init();
-            initAStar();
-            createLevel(1);
-
-            list = bot(players[1]);
+            if (list.length > 0
+              && Math.abs(x2) < config.pas * 3
+              && Math.abs(y2) < config.pas * 3) {
+              next = list.pop();
+              World.add(world, Bodies.circle(next.x, next.y, 1, {
+                isStatic: true,
+                collisionFilter: {group: group},
+                id: 1000,
+                render: {
+                  fillStyle: '#f00',
+                },
+              }));
+            }
+          }
         }
+
+
+      });
+
+      const initAStar = () => {
+        for (let i = 0; i < config.width; i++) {
+          const col = [];
+          for (let j = 0; j < config.height; j++) {
+            col.push({x: i * config.pas, y: j  * config.pas});
+          }
+          mapAStar.push(col);
+        }
+      };
+
+      const aStar = bot => {
+        const closedList = [];
+        const openList = [{
+          x: bot.position.x,
+          y: bot.position.y,
+          dist: 0,
+          cost: 0,
+          prec: null,
+        }];
+        while (openList.length > 0) {
+          openList.sort((a, b) => b.dist - a.dist);
+          const u = openList.pop();
+          if (!u || (u.x === end.position.x && u.y === end.position.y)) {
+            const path = [{x: end.position.x, y: end.position.y}, u];
+            while (path[path.length - 1].prec !== null) {
+              path.push(path[path.length - 1].prec);
+            }
+            return path;
+          }
+          const ux = u.x / config.pas, uy = u.y / config.pas;
+          const hoods = [
+            mapAStar[ux + 1][uy],
+            mapAStar[ux][uy + 1],
+            mapAStar[ux - 1][uy],
+            mapAStar[ux][uy - 1],
+            // mapAStar[ux + 1][uy + 1],
+            // mapAStar[ux - 1][uy + 1],
+            // mapAStar[ux - 1][uy - 1],
+            // mapAStar[ux + 1][uy - 1],
+          ];
+          hoods.forEach(hood => {
+            const node = {...hood};
+            if (hood && !(closedList.find(v => hood.x === v.x && hood.y === v.y)
+              || openList.find(v => hood.x === v.x && hood.y === v.y && hood.cost > v.cost))) {
+              const test = Query.point(Composite.allBodies(world), {x: hood.x, y: hood.y});
+              if (test.findIndex(a => a.id <= config.limit && a.id > 0) !== -1) return;
+              node.cost = u.cost + 1;
+              node.dist = node.cost + Math.pow(((hood.x - end.position.x) * (hood.x - end.position.x) + (hood.y - end.position.y) * (hood.y - end.position.y)), .5);
+              node.prec = u;
+              openList.push(node);
+            }
+          });
+          closedList.push(u);
+        }
+        return [];
+      };
+
+
+      init();
+      initAStar();
+      createLevel(1);
     }
+  }
 </script>
 
 <style scoped>
-    .center {
-        text-align: center;
-    }
+	.center {
+		text-align: center;
+	}
 </style>
